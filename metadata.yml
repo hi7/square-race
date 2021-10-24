@@ -1,10 +1,10 @@
-title: game title
-description: game description
-author: you
+title: Square Race
+description: round based race with squares
+author: Hilger Baumstark
 splash:
   file: assets/no-image.png
 icon:
   file: assets/no-icon.png
 version: v0.0.1
-category: game # game, demo, utility, ...
-url: https://github.com/32blit/32blit-boilerplate
+category: game
+url: https://github.com/hi7/square-race

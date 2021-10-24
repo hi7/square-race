@@ -1,64 +1,8 @@
-# PicoSystem 32blit Boilerplate <!-- omit in toc -->
+# Square Race 32blit PicoSystem<!-- omit in toc -->
 
-![Build](https://github.com/32blit/32blit-boilerplate/workflows/Build/badge.svg)
+A round based race game with squares.
 
-This is a basic template for starting 32blit projects for the Pimoroni PicoSystem.
-
-It shows a minimal code layout and asset pipeline, giving you a starting point
-for a new project.
-
-It's based on the original `template` project from the 
-[32blit beta](https://github.com/pimoroni/32blit-beta), with added asset
-handling, and some tidying up to fit in with how I do things.
-
-- [Why use 32blit SDK on PicoSystem?](#why-use-32blit-sdk-on-picosystem)
-- [How to use this template](#how-to-use-this-template)
-  - [Documentation](#documentation)
-  - [Examples](#examples)
-- [Requirements](#requirements)
-  - [Compilers & Libraries](#compilers--libraries)
-  - [32blit Tools](#32blit-tools)
-  - [32blit & Pico SDKs](#32blit--pico-sdks)
-- [Building](#building)
-- [Copying your game to your PicoSystem](#copying-your-game-to-your-picosystem)
-- [Extra configuration](#extra-configuration)
-- [API Limitations & Board Details](#api-limitations--board-details)
-  - [Unsupported Features](#unsupported-features)
-  - [Limitations](#limitations)
-
-## Why use 32blit SDK on PicoSystem?
-
-The number 1 reason is portability! 32blit SDK will build for:
-
-* Windows
-* macOS
-* Linux
-* Emscripten (Web assembly)
-* PicoSystem
-* 32blit
-
-And is portable to any platform supporting SDL2.
-
-This means you can ship your game to more people on more platforms, share it online to play, and reach a little further than the confines of PicoSystem!
-
-Additionally the 32blit SDK has some conveniences:
-
-* Tiled editor .tmx support for levels
-* An asset pipeline for converting fonts & spritesheets for use on device
-* A boilerplate project with GitHub Actions
-
-## How to use this template
-
-[Use this template](https://github.com/32blit/picosystem-boilerplate/generate) to
-generate your own project.
-
-1. Edit the CMakeList.txt file to set the name of your project
-2. Edit the metadata.yml file to set the information for your project
-3. Edit the LICENSE file to set your name on the license
-4. Delete the contents of this README.md and tell us about your game!
-5. Write lots of super cool code!
-
-### Documentation
+### 32blit Documentation
 
 Consult the [32blit wiki](https://github.com/32blit/32blit-sdk/wiki) for guides on various parts of the SDK:
 
@@ -69,7 +13,7 @@ Consult the [32blit wiki](https://github.com/32blit/32blit-sdk/wiki) for guides 
 * [Working With Files](https://github.com/32blit/32blit-sdk/wiki/File) - 4MB of PicoSystem's flash is reserved as a filesystem
 * [Adding Metadata](https://github.com/32blit/32blit-sdk/wiki/Metadata)
 
-### Examples
+### 32blit Examples
 
 * [Snake](https://github.com/32blit/snake/)
 * [Rocks & Diamonds](https://github.com/32blit/rocks-and-diamonds)
@@ -80,17 +24,16 @@ Consult the [32blit wiki](https://github.com/32blit/32blit-sdk/wiki) for guides 
 
 We recommend using Linux to work with PicoSystem/Pico SDK. It's the path of least resistance!
 
-This guide was tested with Ubuntu 21.04, and most of these instructions will work in its WSL
-(Windows Subsystem for Linux) equivalent.
+This guide was tested with Fedora 34.
 
 ### Compilers & Libraries
 
 You'll need a compiler and a few other dependencies to get started building C++ for PicoSystem:
 
 ```
-sudo apt install git gcc g++ gcc-arm-none-eabi cmake make \
+sudo dnf install git gcc g++ gcc-arm-none-eabi cmake make \
 python3 python3-pip python3-setuptools \
-libsdl2-dev libsdl2-image-dev libsdl2-net-dev unzip
+SDL2 SDL2-devel SDL2_image-devel SDL2_net-dev unzip
 ```
 
 ### 32blit Tools

@@ -1,11 +1,11 @@
 # Basic parameters; check that these match your project / environment
 cmake_minimum_required(VERSION 3.9)
 
-# Replace "game" with a name for your project (this is used the name of the output)
-project(game)
+# Replace "race" with a name for your project (this is used the name of the output)
+project(race)
 
 # Add your sources here (adding headers is optional, but helps some CMake generators)
-set(PROJECT_SOURCE game.cpp game.hpp)
+set(PROJECT_SOURCE race.cpp race.hpp)
 
 # ... and any other files you want in the release here
 set(PROJECT_DISTRIBS LICENSE README.md)
