@@ -20,6 +20,9 @@ Rect seg_rect(Point s1, Point s2) {
         abs(s2.y-s1.y)+16
     );
 }
+bool isZero(Point p) {
+    return p.x == 0 && p.y == 0;
+}
 void render_track() {
     screen.pen = track_color;
     for(int i=0; i<(int)std::size(seg)-1; i++) {
@@ -36,21 +39,34 @@ void render_track() {
 }
 
 enum Alignment { V, H };
-void render_car(Player p, Alignment a=H) {
+void render_car(Point loc, Pen color, Alignment a=H) {
     screen.pen = Pen(0, 0, 0);
-    screen.pixel(Point(p.loc.x-1, p.loc.y-1));
-    screen.pixel(Point(p.loc.x-1, p.loc.y+1));
-    screen.pixel(Point(p.loc.x+1, p.loc.y-1));
-    screen.pixel(Point(p.loc.x+1, p.loc.y+1));
-    screen.pen = p.color;
+    screen.pixel(Point(loc.x-1, loc.y-1));
+    screen.pixel(Point(loc.x-1, loc.y+1));
+    screen.pixel(Point(loc.x+1, loc.y-1));
+    screen.pixel(Point(loc.x+1, loc.y+1));
+    screen.pen = color;
     if(a == V) {
-        screen.line(Point(p.loc.x, p.loc.y-1), Point(p.loc.x, p.loc.y+1));
+        screen.line(Point(loc.x, loc.y-1), Point(loc.x, loc.y+1));
     } else {
-        screen.line(Point(p.loc.x-1, p.loc.y), Point(p.loc.x+1, p.loc.y));
+        screen.line(Point(loc.x-1, loc.y), Point(loc.x+1, loc.y));
     }
 }
 
-bool check_target(Point p, uint8_t active_seg) {
+uint8_t active = 0;
+Player player[] = { 
+    {Point(2, 24), Point(0, 0), Point(0, 0), Pen(230, 50, 50), 0}, 
+    {Point(2, 30), Point(0, 0), Point(0, 0), Pen(60, 60, 250), 0} 
+};
+bool check_target(Point p) {
+    for(int i=0; i<(int)std::size(player); i++) {
+        if(i != active) {
+            if(Rect(player[i].loc.x-1, player[i].loc.y-1, 3, 3).contains(p)) {
+                return false;
+            }
+        }
+    }
+    uint8_t active_seg = player[active].active_seg;
     return 
         seg_rect(seg[active_seg], seg[active_seg+1]).contains(p)
         || seg_rect(seg[active_seg+1], seg[active_seg+2]).contains(p);
@@ -60,21 +76,16 @@ Point offset[] = {
     // N          NE            E             SE
     Point(0, -3), Point(3, -3), Point(3,  0), Point(3, 3),
     // S          SW            W             NW
-    Point(0,  3), Point(3, -3), Point(-3, 0), Point(-3, -3), };
-uint8_t active = 0;
-Player player[] = { 
-    {Point(2, 22), Point(0, 0), Pen(230, 50, 50), 0}, 
-    {Point(2, 30), Point(0, 0), Pen(60, 60, 250), 0} 
-};
+    Point(0,  3), Point(-3, 3), Point(-3, 0), Point(-3, -3), Point(0, 0)};
 void render_target() {
     screen.alpha = 60;
     screen.pen = player[active].color;
     Point target(
-        player[active].loc.x+player[active].dir.x,
-        player[active].loc.y+player[active].dir.x
+        player[active].loc.x+player[active].vec.x,
+        player[active].loc.y+player[active].vec.y
     );
     for(int i=0; i<(int)std::size(offset); i++) {
-        if(check_target(Point(target.x+offset[i].x, target.y+offset[i].y), player[active].active_seg)) {
+        if(check_target(Point(target.x+offset[i].x, target.y+offset[i].y))) {
             screen.rectangle(Rect(target.x+offset[i].x-1, target.y+offset[i].y-1, 3, 3));
         }
     }
@@ -83,7 +94,10 @@ void render_target() {
 
 void render_player() {
     for(int i=0; i<(int)std::size(player); i++) {
-        render_car(player[i]);
+        render_car(player[i].loc, player[i].color);
+        screen.alpha = 80;
+        render_car(player[i].loc + player[i].vec + player[i].dir, player[i].color);
+        screen.alpha = 255;
     }
     render_target();
 }
@@ -126,5 +140,51 @@ void render(uint32_t time) {
 // This is called to update your game state. time is the 
 // amount if milliseconds elapsed since the start of your game
 //
+bool move = false;
 void update(uint32_t time) {
+    if (buttons.state & Button::DPAD_RIGHT) {
+        if ((buttons.state & Button::DPAD_LEFT) == 0) {
+            if(check_target(player[active].loc + player[active].dir)) {
+                player[active].dir.x = 3;
+                move = true;
+            }
+        }
+    }
+    if (buttons.state & Button::DPAD_DOWN) {
+        if ((buttons.state & Button::DPAD_UP) == 0) {
+            if(check_target(player[active].loc + player[active].dir)) {
+                player[active].dir.y = 3;
+                move = true;
+            }
+        }
+    }
+    if (buttons.state & Button::DPAD_LEFT) {
+        if ((buttons.state & Button::DPAD_RIGHT) == 0) {
+            if(check_target(player[active].loc + player[active].dir)) {
+                player[active].dir.x = -3;
+                move = true;
+            }
+        }
+    }
+    if (buttons.state & Button::DPAD_UP) {
+        if ((buttons.state & Button::DPAD_DOWN) == 0) {
+            if(check_target(player[active].loc + player[active].dir)) {
+                player[active].dir.y = -3;
+                move = true;
+            }
+        }
+    }
+    if (((buttons.released & Button::A) > 0 || (buttons.state == 0)) && (move)) {
+        move = false;
+        player[active].vec = Point(
+            player[active].vec.x+player[active].dir.x, 
+            player[active].vec.y+player[active].dir.y);
+        player[active].loc = Point(
+            player[active].loc.x+player[active].vec.x, 
+            player[active].loc.y+player[active].vec.y);
+        player[active].dir = Point(0, 0);
+        active = (active + 1) % std::size(player);
+    }
+    if (buttons.state & Button::A) {
+    }
 }
