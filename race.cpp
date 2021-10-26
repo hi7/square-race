@@ -56,7 +56,7 @@ void render_car(Point loc, Pen color, Alignment a=H) {
 uint8_t active = 0;
 Player player[] = { 
     {Point(2, 24), Point(0, 0), Point(0, 0), Pen(230, 50, 50), 0}, 
-    {Point(2, 30), Point(0, 0), Point(0, 0), Pen(60, 60, 250), 0} 
+    {Point(2, 31), Point(0, 0), Point(0, 0), Pen(60, 60, 250), 0} 
 };
 bool check_target(Point p) {
     for(int i=0; i<(int)std::size(player); i++) {
@@ -72,7 +72,7 @@ bool check_target(Point p) {
         || seg_rect(seg[active_seg+1], seg[active_seg+2]).contains(p);
 }
 
-Point offset[] = { 
+Point dir[] = { 
     // N          NE            E             SE
     Point(0, -3), Point(3, -3), Point(3,  0), Point(3, 3),
     // S          SW            W             NW
@@ -84,9 +84,9 @@ void render_target() {
         player[active].loc.x+player[active].vec.x,
         player[active].loc.y+player[active].vec.y
     );
-    for(int i=0; i<(int)std::size(offset); i++) {
-        if(check_target(Point(target.x+offset[i].x, target.y+offset[i].y))) {
-            screen.rectangle(Rect(target.x+offset[i].x-1, target.y+offset[i].y-1, 3, 3));
+    for(int i=0; i<(int)std::size(dir); i++) {
+        if(check_target(Point(target.x+dir[i].x, target.y+dir[i].y))) {
+            screen.rectangle(Rect(target.x+dir[i].x-1, target.y+dir[i].y-1, 3, 3));
         }
     }
     screen.alpha = 255;
@@ -143,38 +143,34 @@ void render(uint32_t time) {
 bool move = false;
 void update(uint32_t time) {
     if (buttons.state & Button::DPAD_RIGHT) {
-        if ((buttons.state & Button::DPAD_LEFT) == 0) {
-            if(check_target(player[active].loc + player[active].dir)) {
-                player[active].dir.x = 3;
-                move = true;
-            }
+        if(check_target(player[active].loc + player[active].vec + Point(3, player[active].dir.y))) {
+            player[active].dir.x = 3;
+            move = true;
         }
     }
     if (buttons.state & Button::DPAD_DOWN) {
-        if ((buttons.state & Button::DPAD_UP) == 0) {
-            if(check_target(player[active].loc + player[active].dir)) {
-                player[active].dir.y = 3;
-                move = true;
-            }
+        if(check_target(player[active].loc + player[active].vec + Point(player[active].dir.x, 3))) {
+            player[active].dir.y = 3;
+            move = true;
         }
     }
     if (buttons.state & Button::DPAD_LEFT) {
-        if ((buttons.state & Button::DPAD_RIGHT) == 0) {
-            if(check_target(player[active].loc + player[active].dir)) {
-                player[active].dir.x = -3;
-                move = true;
-            }
+        if(check_target(player[active].loc + player[active].vec + Point(-3, player[active].dir.y))) {
+            player[active].dir.x = -3;
+            move = true;
         }
     }
     if (buttons.state & Button::DPAD_UP) {
-        if ((buttons.state & Button::DPAD_DOWN) == 0) {
-            if(check_target(player[active].loc + player[active].dir)) {
-                player[active].dir.y = -3;
-                move = true;
-            }
+        if(check_target(player[active].loc + player[active].vec + Point(player[active].dir.x, -3))) {
+            player[active].dir.y = -3;
+            move = true;
         }
     }
-    if (((buttons.released & Button::A) > 0 || (buttons.state == 0)) && (move)) {
+    if (buttons.state & Button::A) {
+        player[active].dir = Point(0, 0);
+        move = true;
+    }
+    if ((buttons.state == 0) && (move)) {
         move = false;
         player[active].vec = Point(
             player[active].vec.x+player[active].dir.x, 
