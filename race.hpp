@@ -8,4 +8,5 @@ struct Player {
     Point vec;
     Pen color;
     uint8_t active_seg;
+    uint16_t targets;
 };

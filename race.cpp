@@ -2,8 +2,10 @@
 
 using namespace blit;
 
+void check_targets();
 void init() {
     set_screen_mode(ScreenMode::lores);
+    check_targets();
 }
 
 Point seg[] = { 
@@ -55,37 +57,21 @@ void render_car(Point loc, Pen color, Alignment a=H) {
 
 uint8_t active = 0;
 Player player[] = { 
-    {Point(2, 24), Point(0, 0), Point(0, 0), Pen(230, 50, 50), 0}, 
-    {Point(2, 31), Point(0, 0), Point(0, 0), Pen(60, 60, 250), 0} 
+    {Point(2, 24), Point(0, 0), Point(0, 0), Pen(230, 50, 50), 0, 0}, 
+    {Point(2, 31), Point(0, 0), Point(0, 0), Pen(60, 60, 250), 0, 0} 
 };
-bool check_target(Point p) {
-    for(int i=0; i<(int)std::size(player); i++) {
-        if(i != active) {
-            if(Rect(player[i].loc.x-1, player[i].loc.y-1, 3, 3).contains(p)) {
-                return false;
-            }
-        }
-    }
-    uint8_t active_seg = player[active].active_seg;
-    return 
-        seg_rect(seg[active_seg], seg[active_seg+1]).contains(p)
-        || seg_rect(seg[active_seg+1], seg[active_seg+2]).contains(p);
-}
-
+enum Dirs { UP=1, UP_RIGHT=2, RIGHT=4, DOWN_RIGHT=8, DOWN=16, DOWN_LEFT=32, LEFT=64, TOP_LEFT=128, CENTER=256 };
 Point dir[] = { 
-    // N          NE            E             SE
-    Point(0, -3), Point(3, -3), Point(3,  0), Point(3, 3),
-    // S          SW            W             NW
+    // UP         UP_RIGHT      RIGHT         DOWN_RIGHT
+    Point(0, -3), Point(3, -3), Point(3,  0), Point(3, 3), 
+   // DOWN        DOWN_LEFT     LEFT          TOP_LEFT       CENTER
     Point(0,  3), Point(-3, 3), Point(-3, 0), Point(-3, -3), Point(0, 0)};
 void render_target() {
     screen.alpha = 60;
     screen.pen = player[active].color;
-    Point target(
-        player[active].loc.x+player[active].vec.x,
-        player[active].loc.y+player[active].vec.y
-    );
+    Point target(player[active].loc + player[active].vec);
     for(int i=0; i<(int)std::size(dir); i++) {
-        if(check_target(Point(target.x+dir[i].x, target.y+dir[i].y))) {
+        if(player[active].targets & (uint16_t) pow(2, i+1)) {
             screen.rectangle(Rect(target.x+dir[i].x-1, target.y+dir[i].y-1, 3, 3));
         }
     }
@@ -133,6 +119,44 @@ void render(uint32_t time) {
     render_player();
 }
 
+void next_player() {
+    active = (active + 1) % std::size(player);
+}
+bool check_target(Point p) {
+    for(int i=0; i<(int)std::size(player); i++) {
+        if(i != active) {
+            if(Rect(player[i].loc.x-1, player[i].loc.y-1, 3, 3).contains(p)) {
+                return false;
+            }
+        }
+    }
+    uint8_t active_seg = player[active].active_seg;
+    if(seg_rect(seg[active_seg], seg[active_seg+1]).contains(p)) {
+        return true;
+    }
+    if(seg_rect(seg[active_seg+1], seg[active_seg+2]).contains(p)) {
+        player[active].active_seg = active_seg + 1;
+        return true;
+    }
+    return false;
+}
+void check_targets() {
+    player[active].targets = 0;
+    for(int i=0; i<(int)std::size(dir); i++) {
+        if(check_target(player[active].loc + player[active].vec + dir[i])) {
+            player[active].targets += pow(2, i+1);
+        }
+    }
+    if((player[active].targets > 0) && (player[active].targets & CENTER) == 0) { 
+        // center target is not valid
+        for(int i=0; i<(int)std::size(dir); i++) {
+            if(player[active].targets & (uint16_t) pow(2, i+1)) { // take first free target
+                player[active].dir = dir[i];
+            }
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////
 //
 // update(time)
@@ -146,24 +170,56 @@ void update(uint32_t time) {
         if(check_target(player[active].loc + player[active].vec + Point(3, player[active].dir.y))) {
             player[active].dir.x = 3;
             move = true;
+        } else {
+            if((player[active].dir.y == 0) && ((player[active].targets & RIGHT) > 0)) {
+                player[active].dir = Point(3, 0);
+            } else if((player[active].dir.y == -3) && ((player[active].targets & UP_RIGHT) > 0)) {
+                player[active].dir = Point(3, -3);
+            } else if((player[active].dir.y == 3) && ((player[active].targets & DOWN_RIGHT) > 0)) {
+                player[active].dir = Point(3, 3);
+            } 
         }
     }
     if (buttons.state & Button::DPAD_DOWN) {
         if(check_target(player[active].loc + player[active].vec + Point(player[active].dir.x, 3))) {
             player[active].dir.y = 3;
             move = true;
+        } else {
+            if((player[active].dir.x == 0) && ((player[active].targets & DOWN) > 0)) {
+                player[active].dir = Point(0, 3);
+            } else if((player[active].dir.x == -3) && ((player[active].targets & DOWN_LEFT) > 0)) {
+                player[active].dir = Point(-3, 3);
+            } else if((player[active].dir.x == 3) && ((player[active].targets & DOWN_RIGHT) > 0)) {
+                player[active].dir = Point(3, 3);
+            } 
         }
     }
     if (buttons.state & Button::DPAD_LEFT) {
         if(check_target(player[active].loc + player[active].vec + Point(-3, player[active].dir.y))) {
             player[active].dir.x = -3;
             move = true;
+        } else {
+            if((player[active].dir.y == 0) && ((player[active].targets & LEFT) > 0)) {
+                player[active].dir = Point(-3, 0);
+            } else if((player[active].dir.y == -3) && ((player[active].targets & TOP_LEFT) > 0)) {
+                player[active].dir = Point(-3, -3);
+            } else if((player[active].dir.y == 3) && ((player[active].targets & DOWN_LEFT) > 0)) {
+                player[active].dir = Point(-3, 3);
+            } 
         }
     }
     if (buttons.state & Button::DPAD_UP) {
         if(check_target(player[active].loc + player[active].vec + Point(player[active].dir.x, -3))) {
             player[active].dir.y = -3;
             move = true;
+        } else {
+            if((player[active].dir.x == 0) && ((player[active].targets & UP) > 0)) {
+                player[active].dir = Point(0, -3);
+            } else if((player[active].dir.x == -3) && ((player[active].targets & DOWN_LEFT) > 0)) {
+                player[active].dir = Point(-3, -3);
+            } else if((player[active].dir.x == 3) && ((player[active].targets & DOWN_RIGHT) > 0)) {
+                player[active].dir = Point(3, -3);
+            }
         }
     }
     if (buttons.state & Button::A) {
@@ -179,8 +235,11 @@ void update(uint32_t time) {
             player[active].loc.x+player[active].vec.x, 
             player[active].loc.y+player[active].vec.y);
         player[active].dir = Point(0, 0);
-        active = (active + 1) % std::size(player);
-    }
-    if (buttons.state & Button::A) {
-    }
+        next_player();
+        check_targets();
+        // no movement possible, TODO check borders and move car to the edge
+        if(player[active].targets == 0) { 
+            next_player();
+        }
+   }
 }
